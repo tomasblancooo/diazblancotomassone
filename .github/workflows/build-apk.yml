@@ -34,14 +34,21 @@ jobs:
       - name: Crear proyecto Android base
         run: flutter create --org com.cybersec --project-name cybersec_crm --platforms android app
 
-      - name: Copiar el codigo de la app
+          - name: Copiar codigo y ajustar Android
         run: |
+          MAIN=$(find . -path ./app -prune -o -type f -path '*/lib/main.dart' -print | head -n 1)
+          PATCH=$(find . -path ./app -prune -o -type f -name patch_android.dart -print | head -n 1)
+          if [ -z "$MAIN" ] || [ -z "$PATCH" ]; then
+            echo "No se encontraron lib/main.dart o patch_android.dart. Archivos del repositorio:"
+            find . -path ./app -prune -o -path ./.git -prune -o -type f -print
+            exit 1
+          fi
+          LIB_DIR=$(dirname "$MAIN")
+          PATCH_ABS=$(realpath "$PATCH")
           rm -rf app/lib
-          cp -R lib app/lib
-
-      - name: Ajustar Android
-        working-directory: app
-        run: dart ../tool/patch_android.dart
+          cp -R "$LIB_DIR" app/lib
+          cd app
+          dart "$PATCH_ABS"
 
       - name: Instalar dependencias
         working-directory: app
